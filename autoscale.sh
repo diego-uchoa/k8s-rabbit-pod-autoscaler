@@ -6,8 +6,9 @@ deployment=""
 function getCurrentPods() {
   # Retry up to 5 times if kubectl fails
   for i in $(seq 5); do
-    current=$(kubectl -n $namespace describe deploy $deployment | \
-      grep desired | awk '{print $2}' | head -n1)
+    current=$(kubectl get dc $deployment -n $namespace -o custom-columns=POD:.status.readyReplicas | tail -n1)
+    # current=$(kubectl -n $namespace describe deploymentconfig $deployment | \
+    #   grep desired | awk '{print $2}' | head -n1)
 
     if [[ $current != "" ]]; then
       echo $current
@@ -75,7 +76,7 @@ while true; do
                 desiredPods=$(awk "BEGIN { print int( ($currentPods - $desiredPods) * 0.9 + $desiredPods ) }")
               fi
 
-              kubectl scale -n $namespace --replicas=$desiredPods deployment/$deployment 1> /dev/null
+              kubectl scale -n $namespace --replicas=$desiredPods deploymentconfig/$deployment 1> /dev/null
 
               if [[ $? -eq 0 ]]; then
                 # Adjust logging and Slack notifications based on LOGS env and desiredPods number
